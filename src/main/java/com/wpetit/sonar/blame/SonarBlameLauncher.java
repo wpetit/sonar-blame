@@ -6,7 +6,7 @@ package com.wpetit.sonar.blame;
  * @author WPETIT
  * 
  */
-public class SonarBlameLauncher {
+public final class SonarBlameLauncher {
 
     /**
      * Private Constructor cause it's an utility class.
@@ -16,7 +16,7 @@ public class SonarBlameLauncher {
     }
 
     /**
-     * Launch the sonar blame application
+     * Launch the sonar blame application.
      * 
      * @param args
      *            args[0] : sonar base URL, args[1] : optional component to search issue on, args[2]
