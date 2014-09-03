@@ -1,7 +1,7 @@
 package com.wpetit.sonar.blame;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -13,6 +13,12 @@ import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The {@link ResourcesManager} class.
+ * 
+ * @author WPETIT
+ * 
+ */
 public class ResourcesManager {
 
     /** The LOG. */
@@ -57,8 +63,7 @@ public class ResourcesManager {
                 0);
         Map<Integer, String> authorsByLine = parseAuthorsByLineData(msr
                 .getString(ResourcesAPIConstants.DATA.getValue()));
-        String author = authorsByLine.get(line);
-        return author;
+        return authorsByLine.get(line);
     }
 
     /**
@@ -69,7 +74,7 @@ public class ResourcesManager {
      * @return the map
      */
     private Map<Integer, String> parseAuthorsByLineData(final String authorsByLineData) {
-        Map<Integer, String> authorsByLine = new HashMap<Integer, String>();
+        Map<Integer, String> authorsByLine = new ConcurrentHashMap<Integer, String>();
 
         String[] lines = authorsByLineData.split(ResourcesAPIConstants.LINE_SEPARATOR.getValue());
         for (String line : lines) {

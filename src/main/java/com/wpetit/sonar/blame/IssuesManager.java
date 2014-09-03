@@ -68,8 +68,6 @@ public class IssuesManager {
             JsonObject issue = issues.getJsonObject(i);
             treatIssue(issue);
         }
-
-        return;
     }
 
     /**
@@ -91,9 +89,8 @@ public class IssuesManager {
                 String author = resourcesManager.getLineAuthor(componentId, line);
                 assignIssue(issueKey, author);
             } else {
-                LOG.warn(
-                        "The author of the issue {} cannot be retrieved (no line found). No assignment will be performed",
-                        issueKey);
+                LOG.warn("The author of the issue {} cannot be retrieved (no line found). "
+                        + "No assignment will be performed", issueKey);
             }
         }
 

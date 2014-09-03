@@ -1,5 +1,11 @@
 package com.wpetit.sonar.blame;
 
+/**
+ * The {@link IssueAPIConstants} class.
+ * 
+ * @author WPETIT
+ * 
+ */
 public enum IssueAPIConstants {
 
     SEARCH_PATH("/api/issues/search"),
