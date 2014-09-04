@@ -3,6 +3,7 @@ package com.wpetit.sonar.blame;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -87,6 +88,15 @@ public class ResourcesManager {
         return authorsByLine;
     }
 
+    /**
+     * Return the last line commited for the given component.
+     * 
+     * @param componentId
+     *            the component id
+     * @return the line
+     * @throws ParseException
+     *             if the line data cannot be parsed
+     */
     public int getLastLineCommited(final int componentId) throws ParseException {
         LOG.info("Retrieving last line commited of component : {}", componentId);
         Client client = ClientBuilder.newClient();
@@ -108,26 +118,25 @@ public class ResourcesManager {
     }
 
     /**
-     * Return the number of the last line commited for the given line data
+     * Return the number of the last line commited for the given line data.
      * 
-     * @param lastCommitDateTimeByLineData
+     * @param linesData
      *            the last_commit_datetimes_by_line data
      * @return the last line commited
      * @throws ParseException
      */
-    private int getLastCommitedLineByLineData(final String lastCommitDateTimeByLineData)
-            throws ParseException {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss-SSS");
+    private int getLastCommitedLineByLineData(final String linesData) throws ParseException {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss-SSS",
+                Locale.ENGLISH);
 
-        String[] lines = lastCommitDateTimeByLineData.split(ResourcesAPIConstants.LINE_SEPARATOR
-                .getValue());
+        String[] lines = linesData.split(ResourcesAPIConstants.LINE_SEPARATOR.getValue());
         int lastCommitedLine = 1;
         Date lastCommitedDate = null;
         for (String line : lines) {
             String[] lineData = line.split(ResourcesAPIConstants.LINE_CONTENT_SEPARATOR.getValue());
-            Date lastCommitedDateByLine = simpleDateFormat.parse(lineData[1]);
-            if (lastCommitedDate == null || lastCommitedDateByLine.after(lastCommitedDate)) {
-                lastCommitedDate = lastCommitedDateByLine;
+            Date lastCommitByLine = simpleDateFormat.parse(lineData[1]);
+            if (lastCommitedDate == null || lastCommitByLine.after(lastCommitedDate)) {
+                lastCommitedDate = lastCommitByLine;
                 lastCommitedLine = Integer.parseInt(lineData[0]);
             }
         }
