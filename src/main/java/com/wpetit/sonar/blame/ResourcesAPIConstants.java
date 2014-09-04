@@ -13,7 +13,8 @@ public enum ResourcesAPIConstants {
     DATA("data"),
     METRICS("metrics"),
     AUTHORS_BY_LINE("authors_by_line"),
-    LINE_BY_AUTHOR_SEPARATOR("="),
+    LAST_COMMIT_DATETIMES_BY_LINE("last_commit_datetimes_by_line"),
+    LINE_CONTENT_SEPARATOR("="),
     LINE_SEPARATOR(";");
 
     /** The value. */

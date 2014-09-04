@@ -1,5 +1,6 @@
 package com.wpetit.sonar.blame;
 
+
 /**
  * The {@link SonarBlameLauncher} class.
  * 
@@ -26,4 +27,5 @@ public final class SonarBlameLauncher {
         IssuesManager i = new IssuesManager(args[0], args[1]);
         i.getIssuesCreatedAfter(args[2]);
     }
+
 }

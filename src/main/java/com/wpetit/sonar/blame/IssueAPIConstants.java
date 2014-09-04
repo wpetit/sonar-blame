@@ -17,6 +17,7 @@ public enum IssueAPIConstants {
     COMPONENT_ID("componentId"),
     LINE("line"),
     COMPONENT_ROOTS("componentRoots"),
+    STATUSES("statuses"),
     CREATED_AFTER("createdAfter");
 
     /** The value. */

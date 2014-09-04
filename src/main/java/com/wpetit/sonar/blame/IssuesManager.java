@@ -1,11 +1,14 @@
 package com.wpetit.sonar.blame;
 
+import java.text.ParseException;
+
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -28,6 +31,9 @@ public class IssuesManager {
     /** The component. */
     private final String component;
 
+    /** The resourcesManager. */
+    private final ResourcesManager resourcesManager;
+
     /**
      * Constructor.
      * 
@@ -39,6 +45,7 @@ public class IssuesManager {
     public IssuesManager(final String sonarBaseUrl, final String component) {
         this.sonarBaseUrl = sonarBaseUrl;
         this.component = component;
+        resourcesManager = new ResourcesManager(sonarBaseUrl);
     }
 
     /**
@@ -50,14 +57,17 @@ public class IssuesManager {
     public void getIssuesCreatedAfter(final String date) {
 
         Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(sonarBaseUrl)
-                .path(IssueAPIConstants.SEARCH_PATH.getValue())
-
-                .queryParam(IssueAPIConstants.CREATED_AFTER.getValue(), date)
-                .queryParam("statuses", "OPEN,REOPENED,CONFIRMED");
-
+        WebTarget target;
         if (StringUtils.isNotEmpty(component)) {
-            target.queryParam(IssueAPIConstants.COMPONENT_ROOTS.getValue(), component);
+            target = client.target(sonarBaseUrl).path(IssueAPIConstants.SEARCH_PATH.getValue())
+                    .queryParam(IssueAPIConstants.CREATED_AFTER.getValue(), date)
+                    .queryParam(IssueAPIConstants.STATUSES.getValue(), "OPEN,REOPENED,CONFIRMED")
+                    .queryParam(IssueAPIConstants.COMPONENT_ROOTS.getValue(), component);
+
+        } else {
+            target = client.target(sonarBaseUrl).path(IssueAPIConstants.SEARCH_PATH.getValue())
+                    .queryParam(IssueAPIConstants.CREATED_AFTER.getValue(), date)
+                    .queryParam(IssueAPIConstants.STATUSES.getValue(), "OPEN,REOPENED,CONFIRMED");
         }
 
         JsonObject j = target.request(MediaType.APPLICATION_JSON).get(JsonObject.class);
@@ -75,23 +85,31 @@ public class IssuesManager {
      * 
      * @param issue
      *            the issue
+     * @throws ParseException
+     *             if the last commited date cannot be parsed
      */
     private void treatIssue(final JsonObject issue) {
         String issueKey = issue.getString(IssueAPIConstants.KEY.getValue());
         String assignee = issue.getString(IssueAPIConstants.ASSIGNEE.getValue(), null);
         LOG.info("Treating issue : {} - {} - with assignee {} ", issueKey,
                 issue.getString("message"), assignee);
-        if (assignee == null) {
-            int componentId = issue.getInt(IssueAPIConstants.COMPONENT_ID.getValue());
-            if (issue.containsKey(IssueAPIConstants.LINE.getValue())) {
-                int line = issue.getInt(IssueAPIConstants.LINE.getValue());
-                ResourcesManager resourcesManager = new ResourcesManager(sonarBaseUrl);
+        try {
+            if (assignee == null) {
+                int componentId = issue.getInt(IssueAPIConstants.COMPONENT_ID.getValue());
+                int line = 0;
+                if (issue.containsKey(IssueAPIConstants.LINE.getValue())) {
+                    line = issue.getInt(IssueAPIConstants.LINE.getValue());
+                } else {
+
+                    line = resourcesManager.getLastLineCommited(componentId);
+
+                }
                 String author = resourcesManager.getLineAuthor(componentId, line);
                 assignIssue(issueKey, author);
-            } else {
-                LOG.warn("The author of the issue {} cannot be retrieved (no line found). "
-                        + "No assignment will be performed", issueKey);
+
             }
+        } catch (ParseException e) {
+            LOG.error("Cannot retrieve the last line commited for issue {}", issueKey, e);
         }
 
     }
@@ -112,7 +130,12 @@ public class IssuesManager {
                 .queryParam(IssueAPIConstants.ISSUE.getValue(), issueKey)
                 .queryParam(IssueAPIConstants.ASSIGNEE.getValue(), author);
 
-        target.request().post(null);
+        Response response = target.request().post(null);
+        if (Response.Status.OK.getStatusCode() != response.getStatus()) {
+            LOG.error("Cannot assign issue {} to {} because : {}", issueKey, author,
+                    response.readEntity(String.class));
+        }
+
     }
 
 }

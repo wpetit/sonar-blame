@@ -1,5 +1,8 @@
 package com.wpetit.sonar.blame;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -78,10 +81,56 @@ public class ResourcesManager {
 
         String[] lines = authorsByLineData.split(ResourcesAPIConstants.LINE_SEPARATOR.getValue());
         for (String line : lines) {
-            String[] lineData = line.split(ResourcesAPIConstants.LINE_BY_AUTHOR_SEPARATOR
-                    .getValue());
+            String[] lineData = line.split(ResourcesAPIConstants.LINE_CONTENT_SEPARATOR.getValue());
             authorsByLine.put(Integer.parseInt(lineData[0]), lineData[1]);
         }
         return authorsByLine;
+    }
+
+    public int getLastLineCommited(final int componentId) throws ParseException {
+        LOG.info("Retrieving last line commited of component : {}", componentId);
+        Client client = ClientBuilder.newClient();
+        WebTarget target = client
+                .target(sonarBaseUrl)
+                .path(ResourcesAPIConstants.ROOT_PATH.getValue())
+                .queryParam(ResourcesAPIConstants.RESOURCE.getValue(), componentId)
+                .queryParam(ResourcesAPIConstants.METRICS.getValue(),
+                        ResourcesAPIConstants.LAST_COMMIT_DATETIMES_BY_LINE.getValue());
+
+        JsonArray resources = target.request(MediaType.APPLICATION_JSON).get(JsonArray.class);
+
+        JsonObject resource = resources.getJsonObject(0);
+
+        JsonObject msr = resource.getJsonArray(ResourcesAPIConstants.MSR.getValue()).getJsonObject(
+                0);
+
+        return getLastCommitedLineByLineData(msr.getString(ResourcesAPIConstants.DATA.getValue()));
+    }
+
+    /**
+     * Return the number of the last line commited for the given line data
+     * 
+     * @param lastCommitDateTimeByLineData
+     *            the last_commit_datetimes_by_line data
+     * @return the last line commited
+     * @throws ParseException
+     */
+    private int getLastCommitedLineByLineData(final String lastCommitDateTimeByLineData)
+            throws ParseException {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss-SSS");
+
+        String[] lines = lastCommitDateTimeByLineData.split(ResourcesAPIConstants.LINE_SEPARATOR
+                .getValue());
+        int lastCommitedLine = 1;
+        Date lastCommitedDate = null;
+        for (String line : lines) {
+            String[] lineData = line.split(ResourcesAPIConstants.LINE_CONTENT_SEPARATOR.getValue());
+            Date lastCommitedDateByLine = simpleDateFormat.parse(lineData[1]);
+            if (lastCommitedDate == null || lastCommitedDateByLine.after(lastCommitedDate)) {
+                lastCommitedDate = lastCommitedDateByLine;
+                lastCommitedLine = Integer.parseInt(lineData[0]);
+            }
+        }
+        return lastCommitedLine;
     }
 }
